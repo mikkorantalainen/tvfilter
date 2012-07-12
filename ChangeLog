@@ -1,4 +1,17 @@
+2003-07-07  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* configure.in, grabber.c, grabber.h, ui.c:
+	* implemented 50 fps deinterlacing (practically requires DMA to video memory), works with ATI Radeon, at least
+	* upped version number to 0.3.0
+
+	* Makefile.am, README, configure.in, grabber.c, grabber.h, optimize.sh, test.c, test2.c, tvf.c, tvf.h, ui.c:
+	* improved quality
+	* added some command line flags
+
 2003-06-25  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* Makefile.am, README, REQUIRED, configure.in, grabber.c, grabber.h, test2.c, tvf.c, tvf.h, ui.c, ui.h:
+	* upped version number (configure.in) and updated makefile.am
 
 	* REQUIRED, configure.in, grabber.c, grabber.h, optimize.sh, test.c, test2.c, tvf.c, tvf.h, ui.c:
 	* improved quality

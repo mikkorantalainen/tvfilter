@@ -84,6 +84,11 @@ typedef struct
 	int		deinterlace;			/* 1 or 0 */
 	int		autodeinterlace;		/* 1 or 0 */
 	int		debug;				/* 1 or 0 */
+	float		brightness;			/* 0 - 100 % */
+	float		contrast;			/* 0 - 100 % */
+	float		colour;				/* 0 - 100 % */
+	float		whiteness;			/* 0 - 100 % */
+	int		channel;			/* default channel number to set, -1 for no messing around */
 }
 t_status;
 

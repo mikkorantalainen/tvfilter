@@ -25,18 +25,18 @@ int gr_open(t_videosource* src)
 	/* open device */
 	if ( (src->fd = open(src->dev,O_RDWR)) == -1 )
 	{
-		printf("(R)Failed to open device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to open device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 
 	if ( ioctl(src->fd,VIDIOCGMBUF,&mbuf) != 0 )
 	{
-		printf("(R)Failed to query memory buffer of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to query memory buffer of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	if ( mbuf.frames < 2 )
 	{
-		printf("(R)Device %s supports only %d frames in hardware. Would need 2.\n",src->dev,mbuf.frames);
+		fprintf(stderr,"(R)Device %s supports only %d frames in hardware. Would need 2.\n",src->dev,mbuf.frames);
 		return FALSE;
 	}
 	
@@ -51,7 +51,7 @@ int gr_open(t_videosource* src)
 	src->hwframebase = mmap(0,src->hwsize,PROT_READ|PROT_WRITE,MAP_SHARED,src->fd,0);
 	if (src->hwframebase == MAP_FAILED)
 	{
-		printf("(R)Failed to mmap() device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to mmap() device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	printf("(R)mmap()ed device %s to %p.\n",src->dev,src->hwframebase);
@@ -66,7 +66,7 @@ int gr_set_volume(t_videosource* src,int value) /* 0 = mute, 100 = max*/
 	/* unmute audio - just get default audio config and unmute it */
 	if ( ioctl(src->fd,VIDIOCGAUDIO,&audio) != 0 )
 	{
-		printf("(R)Failed to query audio info of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to query audio info of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	if (value >= 50)
@@ -77,7 +77,7 @@ int gr_set_volume(t_videosource* src,int value) /* 0 = mute, 100 = max*/
 	audio.mode = audio.mode | VIDEO_SOUND_STEREO;			/* stereo sound */
 	if ( ioctl(src->fd,VIDIOCSAUDIO,&audio) != 0 )
 	{
-		printf("(R)Failed to unmute audio of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to unmute audio of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
@@ -91,18 +91,52 @@ int gr_set_input_channel(t_videosource* src,int input) /* set input channel to i
 	vidchan.channel = input;
 	if ( ioctl(src->fd,VIDIOCGCHAN,&vidchan) != 0 )
 	{
-		printf("(R)Failed to query input channel of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to query input channel of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 
 	/* select just queried channel as active */
 	if ( ioctl(src->fd,VIDIOCSCHAN,&vidchan) != 0 )
 	{
-		printf("(R)Failed to set input channel of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to set input channel of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
 }
+
+/* setting any parameter to -1 hints to not mess with the setting */
+int gr_set_picture(t_videosource* src,float brightness, float contrast, float colour, float hue, float whiteness)
+{
+	struct video_picture picture;
+	
+	/* query picture settings */
+	if ( ioctl(src->fd,VIDIOCGPICT,&picture) != 0 )
+	{
+		printf("(R)Failed to query picture settings %s: %s\n",src->dev,strerror(errno));
+		return FALSE;
+	}
+
+	if (brightness >= 0)
+		picture.brightness = brightness * 65535.0f;
+	if (contrast >= 0)
+		picture.contrast = contrast * 65535.0f;
+	if (colour >= 0)
+		picture.colour = colour * 65535.0f;
+	if (hue >= 0)
+		picture.hue = hue * 65535.0f;
+	if (whiteness)
+		picture.whiteness = whiteness * 65535.0f;
+
+	if ( ioctl(src->fd,VIDIOCSPICT,&picture) != 0 )
+	{
+		printf("(R)Failed to set picture settings %s: %s\n",src->dev,strerror(errno));
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+
 
 int gr_set_tuner(t_videosource* src,int tuner)
 {
@@ -112,14 +146,14 @@ int gr_set_tuner(t_videosource* src,int tuner)
 	tvtuner.tuner = tuner;
 	if ( ioctl(src->fd,VIDIOCGTUNER,&tvtuner) != 0 )
 	{
-		printf("(R)Failed to query tuner info of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to query tuner info of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 
 	/* select just queried tuner as active */
 	if ( ioctl(src->fd,VIDIOCSTUNER,&tvtuner) != 0 )
 	{
-		printf("(R)Failed to set tuner of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to set tuner of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	return TRUE;
@@ -132,7 +166,7 @@ int gr_set_frequency(t_videosource* src,ulong freq) /* freq in Hz */
 	
 	if (freq == 0)
 	{
-		printf("(R)Frequency is zero. Tuning will be skipped.\n");
+		fprintf(stderr,"(R)Frequency is zero. Tuning will be skipped.\n");
 		return TRUE;
 	}
 	
@@ -143,7 +177,7 @@ int gr_set_frequency(t_videosource* src,ulong freq) /* freq in Hz */
 	/* setup frequency */
 	if ( ioctl(src->fd,VIDIOCSFREQ,&ifreq) != 0 )
 	{
-		printf("(R)Failed to query frequency info of device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to query frequency info of device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 	src->frequency = freq;
@@ -165,7 +199,7 @@ int gr_begin_capture(t_videosource* src)
 	src->capture.format = VIDEO_PALETTE_YUV422;
 	if ( ioctl(src->fd,VIDIOCMCAPTURE,&(src->capture)) != 0 )
 	{
-		printf("(R)Failed to capture frame from device %s: %s\n",src->dev,strerror(errno));
+		fprintf(stderr,"(R)Failed to capture frame from device %s: %s\n",src->dev,strerror(errno));
 		return FALSE;
 	}
 
@@ -248,187 +282,66 @@ int gr_fetch_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* h
 /* returns TRUE if image is interlaced, FALSE otherwise. Doesn't change anything in frame. Parameter 'y' tells which line to check. */
 int gr_detect_interlacing_in_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* history,int checky)
 {
-	unsigned char* captured_frame = src->frame;
-	int x,y;
-
-	int diff0;
-	int diff1;
-	int diff;
-	
-	int pixelcount = 0;
-	int interlacecount = 0;
-	int interlaced = 0;
-
-/* for Y-plane filtering/copy */
-	unsigned char* sp0; /* source plus zero */
-	unsigned char* sp1; /* source plus one */
-	unsigned char* sp2; /* source plus two -- for deinterlacing */
-
-	unsigned char* pp0; /* prev plus zero */
-	unsigned char* pp1; /* prev plus one */
-
-	/* optimizations because compiler doesn't do good enough results we have to buffer values read from pointers ourselves */
-	unsigned char sp0b;
-	unsigned char sp1b;
-	unsigned char sp2b;
-	/* no use to buffer targets because we have to write result anyway sometimes! */
-	unsigned char pp0b;
-	unsigned char pp1b;
-	
-	if (buffer->format != SDL_YV12_OVERLAY)
-	{
-		fprintf(stderr,"%s:%d: only SDL_YV12_OVERLAY supported.\n",__FILE__,__LINE__);
-		return FALSE;
-	}
-	/*if (buffer->planes != 3 || buffer->pitches[1] != buffer->pitches[0] / 2 || buffer->pitches[1] != buffer->pitches[2])*/
-	if (buffer->planes != 3 || buffer->pitches[1] != buffer->pitches[2])
-	{
-		fprintf(stderr,"%s:%d: planes or pitch doesn't match format YV12.\n",__FILE__,__LINE__);
-		fprintf(stderr,"%s:%d: pl=%d p1=%d p0/2=%d p2=%d\n",__FILE__,__LINE__,buffer->planes,buffer->pitches[1],buffer->pitches[0] / 2,buffer->pitches[2]);
-		return FALSE;
-	}
-
-/* -------------------------------------------------
-convert YUV422 to YV12:
-------------------------------------------------- */
-
-	/* Y -- deinterlace during copy... */
-
-	/* run two lines at once - deinterlace odd lines */
-	for (y = checky; y < checky+4; y+=2) /* we have to ignore last line because there's no line below it to blend with when deinterlacing. */
-	{
-		/* pointers to starts of lines in {source, target and previous} frame */
-		sp0 = captured_frame + (GR_WIDTH*y)*2;		
-		sp1 = captured_frame + (GR_WIDTH*(y+1))*2;
-		sp2 = captured_frame + (GR_WIDTH*(y+2))*2;
-
-		pp0 = history->pixels[0] + (history->pitches[0]*y);
-		pp1 = history->pixels[0] + (history->pitches[0]*(y+1));
-
-		/* NORMAL VERSION */
-		for (x = 0; x < GR_WIDTH; x++)
-		{
-/* set whether or not to filter Y-plane with cost of accuracy */
-#define GR_FILTER_Y 0
-			pp0b = *pp0;
-			pp1b = *pp1;
-			sp0b = *sp0;
-			sp1b = *sp1;
-			sp2b = *sp2;
-
-			/* compute odd line pixel */
-
-			diff  = sp0b - sp1b; /* difference between odd and even lines */
-			diff0 = pp1b - sp1b;
-			diff1 = pp0b - sp0b;
-			diff  = diff*diff;
-			diff0 = diff0*diff0;
-			diff1 = diff1*diff1;
-
-
-			if (diff0 <= GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD &&
-			    diff1 <= GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD )
-			{
-				/* no motion - do nothing */
-			}
-			else
-			{
-				if ( diff > GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD )
-				{
-					interlacecount++; /* motion within interlaced image */
-					//if (SDL_GetTicks() > 2000) *sp1 = 255;
-				}
-				pixelcount++;
-				
-			}
-
-			/* update pointers */
-			/* each pixel is 2 bytes in source, 1 byte elsewhere */
-			sp0+=2;
-			sp1+=2;
-			sp2+=2;
-
-			pp0+=1;
-			pp1+=1;
-		} /* end of NORMAL VERSION */
-	}
-
-
-	interlaced = 0;
-	if (pixelcount > 20)
-	{
-		if (interlacecount*3 > pixelcount)
-			interlaced = 1;
-		if (pixelcount < 200 && interlacecount > 20)
-			interlaced = 1;
-	}
-	else
-	{
-		if (interlacecount > 10)
-			interlaced = 1;
-	}
-		
-
-	D printf("pixelcount=%-5d interlacecount=%-5d interlaced=%s\n",pixelcount,interlacecount,interlaced ? "yes" : "no");
-
-	return interlaced;
+	return TRUE;
 }
 
 
-
-int gr_fetch_deinterlaced_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* history,int test)
+int gr_fetch_deinterlaced_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* buffer2,SDL_Overlay* history,int test)
 {
 /* set whether or not to filter Y-plane with cost of accuracy */
-#define GR_FILTER_Y 0
 
 	unsigned char* captured_frame = src->frame;
-	int x,y;
+	register int x;
+	int y;
 
 	register int diff0;
 	register int diff1;
 	register int diff2;
+	register int diff3;
 
 /* for Y-plane filtering/copy */
-	register unsigned char* sp0; /* source plus zero */
-	register unsigned char* sp1; /* source plus one */
-	register unsigned char* sp2; /* source plus two -- for deinterlacing */
+	register unsigned const char* s; /* source frame */
+	register unsigned const char* s2; /* source plus zero */
 
-	register unsigned char* tp0; /* target plus zero */
-	register unsigned char* tp1; /* target plus one */
+	Uint16 target_pitch = GR_WIDTH;
+	register unsigned char* t1; /* target frame (first frame) */
+	register unsigned char* t2; /* target frame (second frame) */
 
-	register unsigned char* pp0; /* previous plus zero */
-	register unsigned char* pp1; /* previous plus one */
-	
-	/* optimizations because compiler doesn't do good enough results we have to buffer values read from pointers ourselves */
-	register unsigned char sp0b;
-	register unsigned char sp1b;
-	register unsigned char sp2b;
-	/* no use to buffer targets because we have to write result anyway sometimes! */
-	register unsigned char pp0b;
-	register unsigned char pp1b;
-	
-	/* filter Y-plane */
-#if GR_FILTER_Y
-	register unsigned char prev0 = 0;
-	register unsigned char prev1 = 0;
-#endif /* GR_FILTER_Y */
+	Uint16 history_pitch = GR_WIDTH;
+	register unsigned char* p; /* previous frame */
 	
 /* for U/V-plane filtering/copy */
 #if 1
-	register unsigned char* s; /* source pointer */
-	register unsigned char* s2; /* source pointer number 2 (for U/V-filtering) -- points to pixel below current one */
-	register unsigned char* t; /* source pointer */
+/*	register unsigned char* s; /* source pointer */
+/*	register unsigned char* s2; /* source pointer number 2 (for U/V-filtering) -- points to pixel below current one */
+/*	register unsigned char* t; /* source pointer */
 #endif
 	if (buffer->format != SDL_YV12_OVERLAY)
 	{
 		fprintf(stderr,"%s:%d: only SDL_YV12_OVERLAY supported.\n",__FILE__,__LINE__);
 		return FALSE;
 	}
-	/*if (buffer->planes != 3 || buffer->pitches[1] != buffer->pitches[0] / 2 || buffer->pitches[1] != buffer->pitches[2])*/
 	if (buffer->planes != 3 || buffer->pitches[1] != buffer->pitches[2])
 	{
-		fprintf(stderr,"%s:%d: planes or pitch doesn't match format YV12.\n",__FILE__,__LINE__);
+		fprintf(stderr,"%s:%d: planes or pitch doesn't match format YV12 (1 of 2).\n",__FILE__,__LINE__);
 		fprintf(stderr,"%s:%d: pl=%d p1=%d p0/2=%d p2=%d\n",__FILE__,__LINE__,buffer->planes,buffer->pitches[1],buffer->pitches[0] / 2,buffer->pitches[2]);
+		return FALSE;
+	}
+	if (buffer2->planes != 3 || buffer2->pitches[1] != buffer2->pitches[2])
+	{
+		fprintf(stderr,"%s:%d: planes or pitch doesn't match format YV12 (2 of 2).\n",__FILE__,__LINE__);
+		fprintf(stderr,"%s:%d: pl=%d p1=%d p0/2=%d p2=%d\n",__FILE__,__LINE__,buffer->planes,buffer->pitches[1],buffer->pitches[0] / 2,buffer->pitches[2]);
+		return FALSE;
+	}
+
+	if (buffer->pitches[0] != GR_WIDTH)
+	{
+		fprintf(stderr,"%s:%d: buffer->pitches[0] = %d != GR_WIDTH\n",__FILE__,__LINE__,buffer->pitches[0]);
+		return FALSE;
+	}
+	if (history->pitches[0] != GR_WIDTH)
+	{
+		fprintf(stderr,"%s:%d: history->pitches[0] = %d != GR_WIDTH\n",__FILE__,__LINE__,history->pitches[0]);
 		return FALSE;
 	}
 
@@ -439,133 +352,131 @@ convert YUV422 to YV12:
 	/* Y -- deinterlace during copy... */
 
 	/* run two lines at once - deinterlace odd lines */
-	for (y = 0; y < GR_HEIGHT-2; y+=2) /* we have to ignore last line because there's no line below it to blend with when deinterlacing. */
+	for (y = 2; y < GR_HEIGHT-2; y+=2) /* we have to ignore last line because there's no line below it to blend with when deinterlacing. */
 	{
 		/* pointers to starts of lines in {source, target and previous} frame */
-		sp0 = captured_frame + (GR_WIDTH*y)*2;		
-		sp1 = captured_frame + (GR_WIDTH*(y+1))*2;
-		sp2 = captured_frame + (GR_WIDTH*(y+2))*2;
+		s = captured_frame + (GR_WIDTH*y)*2;		
 
-		tp0 = buffer->pixels[0] + (buffer->pitches[0]*y);
-		tp1 = buffer->pixels[0] + (buffer->pitches[0]*(y+1));
+#if 0
+		target_pitch = buffer->pitches[0];
+#endif
+		t1 = buffer->pixels[0] + (target_pitch*y);
+		t2 = buffer2->pixels[0] + (target_pitch*y);
 
-		pp0 = history->pixels[0] + (history->pitches[0]*y);
-		pp1 = history->pixels[0] + (history->pitches[0]*(y+1));
+#if 0
+		history_pitch = history->pitches[0];
+#endif
+		p = history->pixels[0] + (history_pitch*y);
 
 		/* NORMAL VERSION */
 		for (x = 0; x < GR_WIDTH; x++)
 		{
-			pp0b = *pp0;
-			pp1b = *pp1;
-			sp0b = *sp0;
-			sp1b = *sp1;
-			sp2b = *sp2;
-
-			/* update even line pixel to target and history */
-#if GR_FILTER_Y
-			/* average between value of source and previous pixel */
-			prev0 = *pp0 = *tp0 = (sp0b + prev0 + 1) >> 1;
-#else
-			*pp0 = *tp0 = sp0b;
-#endif /* GR_FILTER_Y */
-
 			/* compute odd line pixel */
 
-			diff0 = pp1b - sp1b;
-			diff1 = pp0b - sp0b;
-			diff2 = sp0b - sp1b; /* difference between odd and even lines in new frame */
-			diff0 = diff0*diff0;
-			diff1 = diff1*diff1;
-			diff2 = diff2*diff2;
+			/* difference between current and previous odd pixel line */
+			diff0 = p[x+history_pitch] - s[2*x + 2*GR_WIDTH];
+			/*diff0 = diff0*diff0;*/
 
+			/* difference between current and previous even pixel line */
+			diff1 = p[x] - s[2*x];
+			/*diff1 = diff1*diff1;*/
+
+			/* difference between odd and even source line */
+			diff2 = s[2*x] - s[2*x + 2*GR_WIDTH];
+			/*diff2 = diff2*diff2;*/
+
+			/* difference between odd and even source line */
+			diff3 = p[x] - s[2*x];
+
+			/*
 			if (diff2 < GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD ||
 			    (diff0 <= GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD &&
 			    diff1 <= GR_DEINTERLACE_THRESHOLD*GR_DEINTERLACE_THRESHOLD))
+			*/
+			if (
+			(abs(diff2) < GR_DEINTERLACE_THRESHOLD &&
+			abs(diff3) < GR_DEINTERLACE_THRESHOLD)
+			||
+			(abs(diff0) < GR_DEINTERLACE_THRESHOLD &&
+			abs(diff1) < GR_DEINTERLACE_THRESHOLD)
+			)
 			{
 				/* no motion - copy pixel from source */
-#if GR_FILTER_Y
-				prev1 = *tp1 = (sp1b + prev1 + 1) >> 1;
-#else
-				*tp1 = sp1b;
-#endif /* GR_FILTER_Y */
+				t1[x+target_pitch] = t2[x+target_pitch] = s[2*x + 2*GR_WIDTH];
 				/* save real source to history */
 #if GR_PREV_FRAME_HISTORY
-				*pp1 = *tp1;
+				p[x+history_pitch] = t1[x+target_pitch];
 #else
-				*pp1 = sp1b;
+				p[x+history_pitch] = s[2*x + 2*GR_WIDTH];
 #endif
+
+
+				/* update even line pixel to target and history */
+				p[x] = t2[x] = t1[x] = s[2*x];
+
 			}
 			else
 			{
 				/* motion - deinterlace */
 				/* interpolate */
 				/* update history also */
-#if GR_FILTER_Y
-				prev1 = *tp1 = (prev1 + prev1 + sp0b + sp2b + 3) >> 2;
-#else
-				*tp1 = (sp0b + sp2b + 1) >> 1;
-#endif /* GR_FILTER_Y */
+				/**tp1 = (sp0b + sp2b + 1) >> 1;*/
+				t1[x+target_pitch] = (s[2*x] + s[2*x + 4*GR_WIDTH] + 1) / 2;
+				//t2[x+target_pitch] = (s[2*x - 2*GR_WIDTH] + s[2*x + 2*GR_WIDTH] + 1) / 2;
+				t2[x] = (s[2*x - 2*GR_WIDTH] + s[2*x + 2*GR_WIDTH] + 1) / 2;
 				/* save real source to history */
 #if GR_PREV_FRAME_HISTORY
-				*pp1 = *tp1;
+				/* *pp1 = *tp1; */
+				p[x+history_pitch] = t1[x+target_pitch];
 #else
-				*pp1 = sp1b;
+				/* *pp1 = sp1b; */
+				p[x+history_pitch] = s[2*x + 2*GR_WIDTH];
 #endif
 
-#if 1
+#if 0
 				if (test)
-					*tp1 = 255;
+				{
+					t1[x+target_pitch] = 255;
+					t2[x+target_pitch] = 255;
+				}
 #endif
+
+				/* update even line pixel to target and history */
+				p[x] = t1[x] = s[2*x];
+				t2[x+target_pitch] = s[2*x+2*GR_WIDTH];
+
 			}
-
-			/* update pointers */
-			/* each pixel is 2 bytes in source, 1 byte otherwhere */
-			sp0+=2;
-			sp1+=2;
-			sp2+=2;
-
-			tp0+=1;
-			tp1+=1;
-
-			pp0+=1;
-			pp1+=1;
 		} /* end of NORMAL VERSION */
 	}
 /* ---------------------------------------------- */
 	/* V */
-	for (y = 0; y < GR_HEIGHT/2; y++)
+	for (y = 1; y < GR_HEIGHT/2 - 1; y++)
 	{
 		s  = captured_frame + (GR_WIDTH*(y*2))*2 + 3;     /* source to start of line, 2 bytes per pixel, V-component in 2nd pixel */
-		s2 = captured_frame + (GR_WIDTH*((y+1)*2))*2 + 3; /* source to start of line+1, 2 bytes per pixel, V-component in 2nd pixel */
-		t = buffer->pixels[1] + (buffer->pitches[1]*y); /* target to start of line */
+		t1 = buffer->pixels[1] + (buffer->pitches[1]*y); /* target to start of line */
+		t2 = buffer2->pixels[1] + (buffer2->pitches[1]*y); /* target to start of line */
 		for (x = 0; x < GR_WIDTH/2; x++)
 		{
 #if GR_FILTER_UV
-			*t = (*s + *s2 + 1) >> 1; /* avg of 2 V-values*/
+			t2[x] = t1[x] = (s[x*4] + s[x*4 + GR_WIDTH*4] + 1) / 2;
 #else
-			*t = *s; /* avg of 2 V-values*/
+			t2[x] = t1[x] = s[x*4];
 #endif
-			s+=4;	/*each source V-pixel is 4 bytes */
-			s2+=4;	/*each source V-pixel is 4 bytes */
-			t+=1;	/*each target pixel is 1 bytes */
 		}
 	}
 	/* U */
-	for (y = 0; y < GR_HEIGHT/2; y++)
+	for (y = 1; y < GR_HEIGHT/2 - 1; y++)
 	{
 		s  = captured_frame + (GR_WIDTH*(y*2))*2 + 1;     /* source to start of line, 2 bytes per pixel, U-component in first pixel */
-		s2 = captured_frame + (GR_WIDTH*((y+1)*2))*2 + 1; /* source to start of line+1, 2 bytes per pixel, U-component in 2nd pixel */
-		t = buffer->pixels[2] + (buffer->pitches[2]*y); /* target to start of line */
+		t1 = buffer->pixels[2] + (buffer->pitches[2]*y); /* target to start of line */
+		t2 = buffer2->pixels[2] + (buffer2->pitches[2]*y); /* target to start of line */
 		for (x = 0; x < GR_WIDTH/2; x++)
 		{
 #if GR_FILTER_UV
-			*t = (*s + *s2 + 1) >> 1; /* avg of 2 U-values*/
+			t2[x] = t1[x] = (s[x*4] + s[x*4 + GR_WIDTH*4] + 1) / 2;
 #else
-			*t = *s; /* avg of 2 U-values*/
+			t2[x] = t1[x] = s[x*4];
 #endif
-			s+=4;   /*each source U-pixel is 4 bytes */
-			s2+=4;	/*each source U-pixel is 4 bytes */
-			t+=1;   /*each target pixel is 1 bytes */
 		}
 	}
 /* ---------------------------------------------- */
@@ -674,6 +585,7 @@ int gr_get_info(t_videosource* src)
 	struct video_tuner vidtun;
 	struct video_channel vidchan;
 	struct video_audio audio;
+	struct video_picture picture;
 	ulong freq;
 	
 	/* query capabilities */
@@ -691,6 +603,21 @@ int gr_get_info(t_videosource* src)
 	printf("Audio Devices       %d\n",vidcap.audios);
 	printf("Max Width  (px)     %d\n",vidcap.maxwidth);
 	printf("Max Height (px)     %d\n",vidcap.maxheight);
+
+	/* query picture settings */
+	if ( ioctl(src->fd,VIDIOCGPICT,&picture) != 0 )
+	{
+		printf("(R)Failed to query picture settings %s: %s\n",src->dev,strerror(errno));
+		return FALSE;
+	}
+	printf("Brightness          %d\n",picture.brightness);
+	printf("Contrast            %d\n",picture.contrast);
+	printf("Colour              %d\n",picture.colour);
+	printf("Hue                 %d\n",picture.hue);
+	printf("Whiteness           %d\n",picture.whiteness);
+	printf("Palette             0x%08X\n",picture.palette);
+	
+
 
 	if ( vidcap.type & (VIDEO_TUNER_PAL | VIDEO_TUNER_NTSC) )
 	{

@@ -1,19 +1,37 @@
 dnl Process this file with autoconf to produce a configure script.
 
 dnl Setup for automake
-AC_INIT(tvf.c)
-AM_INIT_AUTOMAKE(TV-Filter, 0.2.2)
+dnl AC_INIT(tvf.c)
+dnl AM_INIT_AUTOMAKE(TV-Filter, 0.3.0)
 
 dnl Following requires pretty recent automake (at least 1.7.5 works)
-dnl AC_INIT(TV-Filter, 0.2.2)
-dnl AC_CONFIG_SRCDIR(tvf.c)
-dnl AM_INIT_AUTOMAKE
-
-dnl AC_CANONICAL_HOST
+AC_INIT(TV-Filter, 0.3.0)
+AC_CONFIG_SRCDIR(tvf.c)
+AM_INIT_AUTOMAKE
 
 dnl Check for tools
 
+if test "x$CFLAGS" = x ; then
+	echo "*** You haven't defined CFLAGS environment variable."
+	echo "*** This software burns quite some CPU time, so you"
+	echo "*** probably want to run configure as:"
+	echo '*** $ env CFLAGS="-O3 -march=i686 -fomit-frame-pointer -fno-volatile \'
+	echo '***   -funroll-all-loops" ./configure'
+	echo '*** You may replace the i686 part with athlon-xp or pentium4.'
+else
+	echo "Using CFLAGS=$CFLAGS"
+fi
+
+if test ! -c /dev/video ; then
+	echo "*** Character device /dev/video doesn't exists."
+	echo "*** This software requires v4l (Video for Linux)"
+	echo "*** compatible capture device."
+	echo "*** You may still compile the software even though"
+	echo "*** you don't plan to run it on this platform."
+fi
+
 AC_PROG_CC
+AC_CANONICAL_HOST
 
 dnl Check for SDL
 SDL_VERSION=1.1.7

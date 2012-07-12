@@ -5,8 +5,11 @@ CPU=athlon
 #CPU=pentium4
 #CPU=athlon-xp
 
-CFLAGS="-Wall -O3 -funroll-loops -fno-volatile -fomit-frame-pointer -fschedule-insns -fschedule-insns2 -march=$CPU -mcpu=$CPU -fno-force-addr -ffast-math -fexpensive-optimizations -fsched-spec-load -fsched-spec-load-dangerous -frerun-loop-opt -funroll-all-loops -fprefetch-loop-arrays -fmove-all-movables -frename-registers"
-CFLAGS="-O3 -fomit-frame-pointer -mcpu=$CPU -march=$CPU"
+#CFLAGS="-Wall -O3 -funroll-loops -fno-volatile -fomit-frame-pointer -fschedule-insns -fschedule-insns2 -march=$CPU -mcpu=$CPU -fno-force-addr -ffast-math -fexpensive-optimizations -fsched-spec-load -fsched-spec-load-dangerous -frerun-loop-opt -funroll-all-loops -fprefetch-loop-arrays -fmove-all-movables -frename-registers"
+#CFLAGS="-O3 -fomit-frame-pointer -mcpu=$CPU -march=$CPU"
+#CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -msse2 -mfpmath=sse,387"
+#CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -m3dnow -fpeel-loops -funswitch-loops"
+CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -m3dnow -fmove-all-movables -freduce-all-givs"
 
 echo ""
 echo "COMPILE TARGET CPU: $CPU"
@@ -31,12 +34,17 @@ echo "Compiling with profiling..."
 echo "==========================="
 echo ""
 #CFLAGS="$CFLAGS -fprofile-arcs" ./configure && make clean all
-make CFLAGS="$CFLAGS -fprofile-arcs" clean all
+make CFLAGS="$CFLAGS -g -fprofile-arcs" clean all
 time -v ./tvf
 echo ""
 echo "Compiling fully optimized version..."
 echo "===================================="
 echo ""
+rm -f ui.da
 #CFLAGS="$CFLAGS -fbranch-probabilities" ./configure && make clean all && rm -f grabber.da tvf.da ui.da
-make CFLAGS="$CFLAGS -fprofile-arcs" clean all && rm -f grabber.da tvf.da ui.da
+#make CFLAGS="$CFLAGS -fbranch-probabilities -freorder-functions" clean all && rm -f grabber.da tvf.da ui.da
+make CFLAGS="$CFLAGS -fbranch-probabilities" clean all && rm -i grabber.da tvf.da ui.da
 time -v ./tvf
+
+## ASM output:
+##gcc -S `sdl-config --cflags` grabber.c -masm=intel -fverbose-asm

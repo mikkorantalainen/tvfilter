@@ -30,10 +30,8 @@
 
 /***** config ***************************************************************/
 
-/* set whether or not to filter Y-plane with cost of accuracy */
-#define GR_FILTER_Y 0
-/* set whether or not to filter UV */
-#define GR_FILTER_UV 0
+/* set whether or not to filter UV to reduce noise */
+#define GR_FILTER_UV 1
 
 #define GR_FULL			1	/* grab and filter full resolution? set to 0 if dropping frames */
 #define GR_RGB_GIVES_BGR	1	/* fix buggy drivers that return bytes in wrong order */
@@ -45,7 +43,7 @@
 
 #define GR_DEINTERLACE		GR_FULL	/* there's no point trying to deinterlace if you dont grap full height */
 #define GR_DEINTERLACE_HQ	1	/* high quality de-interlacing (CPU!) */
-#define GR_DEINTERLACE_THRESHOLD 10	/* increase if you see noise */
+#define GR_DEINTERLACE_THRESHOLD 9	/* increase if you see noise */
 
 #define GR_PREV_FRAME_HISTORY	0	/* use filtered frame as history instead of real source */
 
@@ -88,8 +86,8 @@
 #define hz2int(i)	((ulong)i/62500)
 
 #if GR_FULL
-	#define GR_WIDTH	720	/* must be dividable by 4 */
-	#define GR_HEIGHT	576	/* must be dividable by 4 */
+	#define GR_WIDTH	512
+	#define GR_HEIGHT	576	/* must be dividable by 2 */
 #else   /* grab half height */
 	#define GR_WIDTH	768	/* 192,384,768 for PAL */
 	#define GR_HEIGHT	288	/* 144,288,576 for PAL */
@@ -145,12 +143,13 @@ typedef struct
 int gr_open(t_videosource* src);
 int gr_set_volume(t_videosource* src,int value); /* 0 = mute, 100 = max*/
 int gr_set_input_channel(t_videosource* src,int input); /* set input channel to input */
+int gr_set_picture(t_videosource* src,float brightness, float contrast, float colour, float hue, float whiteness);
 int gr_set_frequency(t_videosource* src,ulong freq); /* freq in Hz */
 int gr_begin_capture(t_videosource* src);
 int gr_sync_next(t_videosource* src);
 int gr_detect_interlacing_in_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* history,int checky);
 int gr_fetch_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* history, int test);
-int gr_fetch_deinterlaced_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* history, int test);
+int gr_fetch_deinterlaced_frame_as_yv12(t_videosource* src,SDL_Overlay* buffer,SDL_Overlay* buffer2,SDL_Overlay* history, int test);
 int gr_end_capture(t_videosource* src);
 int gr_close(t_videosource* src);
 int gr_get_info(t_videosource* src);

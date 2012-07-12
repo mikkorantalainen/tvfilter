@@ -32,6 +32,17 @@ tvf.h
 ui.c
 ui.h
 
+Required hardware and hardware:
+
+- SDL 1.1.7 & SDL-devel 1.1.7 or better
+- video4linux compatible videocard with ability to mmap() the captured 
+  image as YUV422 
+- at least duron 650MHz processor (for full resolution)
+- display adapter with hardware YV12 overlay rendering
+- Hauppauge WinTV (bt878 based) tv capture card is known to work
+  with bttv driver version 0.7.100
+- Matrox G400 and ATI Radeon 7200 are known to work with XFree 4.3.0
+
 
 To Do:
 
@@ -44,6 +55,16 @@ To Do:
 
 Version specific notes:
 
+TV-Filter 0.3.0:
+
+Added support for 50 FPS deinterlacing. Requires pretty high quality
+graphics card drivers and probably DMA accelerated XVideo support.
+Seems to work with at least ATI Radeon 7200 but the maximum resolution
+I can use with Duron 650 is 512x576. TV-Filter starts in 50 FPS mode by
+default bút you can press 'i' to change to interlaced 25 FPS mode.
+
+Also, added support for adjusting brightness, contrast etc with command
+line parameters. See tvf --help or source for more information.
 
 TV-Filter 0.2.2:
 

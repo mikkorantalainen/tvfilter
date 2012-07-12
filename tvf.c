@@ -118,13 +118,18 @@ void parse_options(int argc, char** argv)
 		{"height",		1, 0, 'H'},
 		{"help",		0, 0, 'h'},
 		{"version",		0, 0, 'V'},
+		{"brightness",		1, 0, 'b'},
+		{"contrast",		1, 0, 'c'},
+		{"colour",		1, 0, 'C'},
+		{"whiteness",		1, 0, 'w'},
+		{"channel",		1, 0, 's'},
 		{0, 0, 0, 0}
 	};
        	int option_index = 0;
 #endif
 	int c;
 	char* opts;
-	opts = "fdH:W:hV"; /* all possible options */
+	opts = "fdH:W:hVb:c:C:w:s:"; /* all possible options */
 
 	/*********************************
 		setup default config
@@ -141,6 +146,11 @@ void parse_options(int argc, char** argv)
 	status.deinterlace	= 0;
 	status.autodeinterlace	= 1;
 	status.debug		= 0;
+	status.brightness	= -1.0; /* don't mess around */
+	status.contrast		= -1.0;
+	status.colour		= -1.0;
+	status.whiteness	= -1.0;
+	status.channel		= -1; /* don't mess around */
 
 	/*********************************/
 
@@ -186,6 +196,22 @@ void parse_options(int argc, char** argv)
              			break;
              		case 'H':
 				status.height = (int)atof(optarg);
+             			break;
+
+             		case 'b':
+				status.brightness = atof(optarg);
+             			break;
+             		case 'c':
+				status.contrast = atof(optarg);
+             			break;
+             		case 'C':
+				status.colour = atof(optarg);
+             			break;
+             		case 'w':
+				status.whiteness = atof(optarg);
+             			break;
+             		case 's':
+				status.channel = (int)atof(optarg)-1;
              			break;
 
              		case 'V':

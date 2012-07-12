@@ -1,9 +1,8 @@
+AM_CFLAGS	= -O3 -funroll-all-loops -fno-volatile -march=i686
 #AM_CFLAGS	= -Wall -O3 -funroll-all-loops -fno-volatile -march=i586 -mcpu=i586 $(SDL_CFLAGS)
 #AM_LFLAGS	= $(SDL_LIBS)
 
 bin_PROGRAMS	= tvf
-#check_PROGRAMS  = tvftest
-#TESTS		= tvftest
 check_PROGRAMS  = test test2 tvftest
 TESTS		= test test2 tvftest
 EXTRA_DIST	= optimize.sh test.c test2.c

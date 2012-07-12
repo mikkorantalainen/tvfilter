@@ -15,11 +15,13 @@
 #include "ui.h"
 #include "grabber.h"
 #include "SDL_syswm.h" /* for window resize & position -- X11 support only! */
+#include <unistd.h> /* execlp() */
+#include <stdio.h> /* perror() */
 
 /* oversizing with fullscreen (per side), set 0 if there's any problems */
-#define OVERSIZEX (40) /* horizontal overscan in pixels */
-#define OVERSIZEY (30) /* vertical overscan in pixels */
-#define OVERSIZEXBALANCE (15) /* set to zero for even sized borders */
+#define OVERSIZEX (16) /* horizontal overscan in pixels */
+#define OVERSIZEY (0) /* vertical overscan in pixels */
+#define OVERSIZEXBALANCE (14) /* set to zero for even sized borders */
 #define OVERSIZEYBALANCE (0)  /* and negative to move towards right */
 
 /* frequencey and input */
@@ -38,7 +40,7 @@ unsigned long int channels[NO_CHANNELS][2] =
 	{0,3}, /* Composite3 */
 	{0,2}, /* S-Video */
 };
-int channelindex = 0;
+static int channelindex = -1;
 
 
 /* add SDL_OPENGL to flags if OpenGL is to be used! */
@@ -98,7 +100,7 @@ void fullscreen_to_window(SDL_Surface *screen)
 		int w, h;
 		if ( info.subsystem == SDL_SYSWM_X11 )
 		{
-			status.width = GR_WIDTH;
+			status.width = GR_HEIGHT*4/3 /*GR_WIDTH*/;
 			status.height = GR_HEIGHT;
 
 			info.info.x11.lock_func();
@@ -205,6 +207,16 @@ void handle_key(SDL_Surface* screen,SDL_Overlay* overlay,t_videosource* vsrc, SD
 	{
 		/* toggle capture */
 		status.showvideo = status.showvideo ? 0 : 1;
+	}
+	if ( key == SDLK_m )
+	{
+		/* start teletext (alevt) */
+		if (fork() == 0)
+		{
+			execlp("alevt","alevt","-geometry","41x25+0+0",NULL);
+			perror("fork() and execlp('alevt') failed");
+			exit(2);
+		}
 	}
 	if ( key == SDLK_q )
 	{
@@ -436,6 +448,7 @@ int ui_main(void)
 {
 	SDL_Surface* screen;
 	SDL_Overlay* overlay;	/* yuv overlay */
+	SDL_Overlay* overlay2;	/* yuv overlay number 2 */
 	SDL_Overlay* buffer;	/* yuv buffer for deinterlacing */
 	Uint32 time;
 	int interlaced;
@@ -490,16 +503,21 @@ int ui_main(void)
 */
 	/* setup overlay: */
 	overlay = SDL_CreateYUVOverlay(GR_WIDTH, GR_HEIGHT,SDL_YV12_OVERLAY, screen);
-	
 	if (! overlay || overlay->format != SDL_YV12_OVERLAY)
 	{
-		fprintf(stderr, "Couldn't get %dx%d YV12 overlay: %s\n", GR_WIDTH, GR_HEIGHT, SDL_GetError());
+		fprintf(stderr, "Couldn't get %dx%d YV12 overlay (1 of 2): %s\n", GR_WIDTH, GR_HEIGHT, SDL_GetError());
 		exit(3);
+	}
+	overlay2 = SDL_CreateYUVOverlay(GR_WIDTH, GR_HEIGHT,SDL_YV12_OVERLAY, screen);
+	if (! overlay2 || overlay2->format != SDL_YV12_OVERLAY)
+	{
+		fprintf(stderr, "Couldn't get %dx%d YV12 overlay (2 of 2): %s\n", GR_WIDTH, GR_HEIGHT, SDL_GetError());
+		exit(4);
 	}
 	
 #if 1
 	/* print info */
-	if (overlay->planes == 3) /* sanity check */
+	if (overlay->planes == 3 && overlay2->planes == 3) /* sanity check */
 	{
 		printf("Overlay info:\n");
 		printf("Format: 0x%08X\n",overlay->format);
@@ -517,9 +535,12 @@ int ui_main(void)
 	}
 	else
 	{
-		printf("Warning: number of planes %d instead of expected 3.\n",overlay->planes);
+		fprintf(stderr,"Warning: number of planes %d instead of expected 3.\n",overlay->planes);
 	}
 #endif
+
+	clear_yv12_buffer(overlay);
+	clear_yv12_buffer(overlay2);
 
 	status.shutdown = 0;
 	status.showvideo = 1;
@@ -547,6 +568,23 @@ int ui_main(void)
 	gr_set_input_channel(&vsrc,0);
 	gr_set_frequency(&vsrc,266250000);
 	*/
+
+	if (status.channel >= 0 && status.channel < NO_CHANNELS)
+	{
+		gr_set_input_channel(&vsrc,channels[status.channel][1]);
+		gr_set_frequency(&vsrc,channels[status.channel][0]);
+		channelindex = status.channel;
+	}
+
+	/* setup picture */
+	
+	gr_set_picture(&vsrc,
+			status.brightness,
+			status.contrast,
+			status.colour,
+			-1, /* hue */
+			status.whiteness);
+	
 	gr_set_volume(&vsrc,100);
 
 	/* start capturing */
@@ -572,8 +610,15 @@ int ui_main(void)
 			mileage may vary. */
 			gr_sync_next(&vsrc);
 
-			/* Output buffer is set to YUV pixels */
-			SDL_LockYUVOverlay(overlay);
+			if (status.deinterlace)
+			{
+				SDL_Rect drect;
+				drect.x=0;
+				drect.y=0;
+				drect.w=status.width;
+				drect.h=status.height;
+				SDL_DisplayYUVOverlay(overlay2, &drect);
+			}
 
 			if (status.autodeinterlace)
 			{
@@ -605,11 +650,13 @@ int ui_main(void)
 				D printf("deinterlace=%d progressive_frames=%d interlaced_frames=%d\n",status.deinterlace,progressive_frames,interlaced_frames);
 			}
 
+			SDL_LockYUVOverlay(overlay2);
+			SDL_LockYUVOverlay(overlay);
 			/* *convert* YUV422 frame to YV12 directly to overlay */
 			if (status.deinterlace)
 			{
 				D printf("deinterlacing\n");
-				gr_fetch_deinterlaced_frame_as_yv12(&vsrc,overlay,buffer,status.debug);
+				gr_fetch_deinterlaced_frame_as_yv12(&vsrc,overlay,overlay2,buffer,status.debug);
 			}
 			else
 			{
@@ -628,9 +675,11 @@ int ui_main(void)
 			whole picture but in small vertical area.
 			Blacking out only at top and bottom seems to
 			work fine. */
-			clearborder_yv12_buffer(overlay,0,2);
 
+			clearborder_yv12_buffer(overlay,0,2);
+			clearborder_yv12_buffer(overlay2,0,2);
 			SDL_UnlockYUVOverlay(overlay);
+			SDL_UnlockYUVOverlay(overlay2);
 
 			//time = SDL_GetTicks();
 
@@ -639,6 +688,7 @@ int ui_main(void)
 			G400 and SDL 1.1.7 this takes like 15ms. I
 			could apply a noise filter in that time... */
 
+#if 1
 			{
 				SDL_Rect drect;
 				drect.x=0;
@@ -647,7 +697,7 @@ int ui_main(void)
 				drect.h=status.height;
 				SDL_DisplayYUVOverlay(overlay, &drect);
 			}
-			
+#endif			
 			//printf("SDL_DisplayYUVOverlay() took %d ms.\n",SDL_GetTicks() - time);
 		}
 		else
@@ -658,7 +708,6 @@ int ui_main(void)
 			SDL_Delay(35);
 #if 0
 			SDL_LockYUVOverlay(overlay);
-			clear_yv12_buffer(overlay);
 			SDL_UnlockYUVOverlay(overlay);
 			{
 				SDL_Rect drect;
