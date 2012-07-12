@@ -5,11 +5,11 @@ CPU=athlon
 #CPU=pentium4
 #CPU=athlon-xp
 
-#CFLAGS="-Wall -O3 -funroll-loops -fno-volatile -fomit-frame-pointer -fschedule-insns -fschedule-insns2 -march=$CPU -mcpu=$CPU -fno-force-addr -ffast-math -fexpensive-optimizations -fsched-spec-load -fsched-spec-load-dangerous -frerun-loop-opt -funroll-all-loops -fprefetch-loop-arrays -fmove-all-movables -frename-registers"
+CFLAGS="-Wall -O3 -funroll-loops -fomit-frame-pointer -fschedule-insns -fschedule-insns2 -fno-force-addr -ffast-math -fexpensive-optimizations -fsched-spec-load -fsched-spec-load-dangerous -frerun-loop-opt -funroll-all-loops -fprefetch-loop-arrays -frename-registers"
 #CFLAGS="-O3 -fomit-frame-pointer -mcpu=$CPU -march=$CPU"
 #CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -msse2 -mfpmath=sse,387"
 #CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -m3dnow -fpeel-loops -funswitch-loops"
-CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -m3dnow -fmove-all-movables -freduce-all-givs"
+#CFLAGS="-O3 -fomit-frame-pointer -march=$CPU -mmmx -m3dnow -fmove-all-movables -freduce-all-givs"
 
 echo ""
 echo "COMPILE TARGET CPU: $CPU"
