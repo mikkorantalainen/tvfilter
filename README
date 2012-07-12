@@ -1,0 +1,71 @@
+
+TV-Filter
+
+Keywords: adaptive deinterlacing, line doubler, upconverter,
+progressive, tv, video, film, motion detection
+
+Target is to grab interlaced analog video from video4linux compatible
+device and filter it in real time to progressive and noise reduced.
+Resulting image is rendered with SDL to YUV overlay, scaled as needed.
+I haven't seen line doubling upconverter in live but according to what
+I've read this software should be equal to average one.
+
+This software doesn't contain inverse-telecine deinterlacing, but
+should be otherwise compatible with NTSC (You might need to change
+capture resolution in grabber.h though). I won't add inverse-telecine
+because we have PAL here and for another reason telecine is brain dead
+by definition and I therefore refuse to support it in any way. If you
+choose to add such support and redistribute your work you're required
+to distribute modified source also to comply with GPL.
+
+
+Required files (minimum, you need automake, aclocal and autoconf):
+
+AUTHORS
+Makefile.am
+README
+configure.in
+grabber.c
+grabber.h
+tvf.c
+tvf.h
+ui.c
+ui.h
+
+
+To Do:
+
+* brightness, contrass and hue for both input and source (separated)
+* real time histogram for input controls
+* polished ui
+* noise filter
+* software sound delay (40ms)? (I'd use SB Live delay DSP patch)
+
+
+Version specific notes:
+
+
+TV-Filter 0.2.2:
+
+User interface is unpolished. You need to select capture resolution at
+grabber.h and setup channels in ui.c. If you don't feel like modifying
+source to setup channels you may simply tune channel with another
+program and use this to watch it. TV-Filter doesn't change channels by
+default.
+
+Automatic detection for the need for deinterlacing is ad hoc, but it
+seems to work most of the time. In fact I mostly use automatic
+detection when I watch TV. Autodetect works worst with some music
+videos that mix progressive and interlaced parts; I think there's no
+way to make this better with this small CPU usage.
+
+Hardcoded keys:
+keypad+	:	channel up
+keypad-	:	channel down
+a	:	automatic deinterlacing
+i	:	force interlaced image (good for progressive sources)
+d	:	force deinterlacing (if autodetect doesn't work)
+t	:	test (render interpolated pixels as white)
+f	:	fullscreen (WORKSFORME, I'm using icewm)
+w	:	centered window with real capture resolution
+

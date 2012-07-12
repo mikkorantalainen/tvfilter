@@ -1,0 +1,128 @@
+2003-06-25  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* REQUIRED, configure.in, grabber.c, grabber.h, optimize.sh, test.c, test2.c, tvf.c, tvf.h, ui.c:
+	* improved quality
+	* higher performance (compiler optimization script added)
+
+2003-06-11  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* ui.c: * fixed a bug caused by incorrect screen config
+
+	* test.c: * added a simple benchmark utility for overlays
+
+2001-07-20  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c, grabber.h, ui.c:
+	* removed unused code (filtering and deinterlacing with lookup table -
+	it's way too slow to be usable)
+
+	* grabber.c, grabber.h, ui.c:
+	* added support for oversizing the screen (define in ui.c)
+	* support for tuner selection
+
+2001-07-13  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* README, grabber.h, ui.c: * minor improvements
+
+2001-06-01  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c: * commit before trying to fix deinterlacing
+
+2001-05-31  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* ui.c: * made ui.c not to setup channel by default
+
+	* ChangeLog:
+	* removed ChangeLog because I generate it with rcs2log anyway...
+
+	* README: * updated README
+
+	* configure.in, grabber.c, grabber.h, tvf.c, tvf.h, ui.c, ui.h:
+	* fixed channel selection and added support for hardcoded channel changing
+
+2001-05-25  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c, grabber.h, ui.c:
+	* trying to autodetect the need for deinterlacing. There's still some
+	problems but the problem area itself isn't that easy...
+
+	* grabber.c: * commit before removing test from deinterlacing routine
+
+2001-05-24  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* ui.c:
+	* committed working version before tweaking for more performance...
+
+	* grabber.c, grabber.h, ui.c:
+	* changed borders without interlacing slightly. There seems to be some
+	error related to PCI timing I haven't found yet!
+
+2001-05-22  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c:
+	* ok. motion detection works pretty well right now. I think my
+	deinterlacer generates better results than others I've seen.
+
+	* grabber.c, grabber.h:
+	* commit before trying to improve motion detection
+
+	* grabber.c:
+	* merged even and odd line loops in deinterlacing. Some optimizations
+	still needs to be done.
+
+2001-05-21  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c, grabber.h:
+	* fixed bug that caused incorrect deinterlacing when using motion
+	detection according to even lines. Unfortunately it seems that
+	there's not enough bandwidth to use it anyway.
+	* TODO: merge even and odd line copying to spare bandwidth - hopefully we
+	can do correct motion detection and deinterlacing...
+
+	* grabber.c, grabber.h, ui.c:
+	* fixed screen borders that are incorrectly send by station...
+
+	* grabber.h, tvf.c, tvf.h, ui.c, grabber.c:
+	* added deinterlacing (which looks pretty good btw =)
+	* added ui shortcuts: i=interlaced, d=deinterlaced, t=test (deinterlaced)
+
+	* ui.c: * fixed fullscreen bug caused by copy-paste code...
+
+2001-05-14  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c, grabber.h:
+	* try to deinterlace - it seems pretty hopeless though...
+
+	* grabber.c, grabber.h, ui.c:
+	* hmm. Need to get speed up from somewhere...
+
+	* configure.in, grabber.c, grabber.h, ui.c:
+	* filter lookup table testing
+
+	* ui.c: * removed old debug message
+
+	* Makefile.am, configure.in: * updated configure.in and Makefile.am
+
+2001-05-13  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c, grabber.h, ui.c:
+	* UYV422 to YV12 conversion done with U/V-filtering.
+	* deinterlace filter needs to be done - I think there's 10-15 ms
+	processing time available. I sure hope it's enough
+
+2001-05-12  Mikko Rantalainen  <mira@st.jyu.fi>
+
+	* grabber.c: * conversion done
+	* fix needed for YUV422 to YV12
+
+	* configure.in, grabber.c, grabber.h, tvf.c, tvf.h, ui.c:
+	* yuv port. YUV422 to YV12 conversion needs to be done.
+
+	* ui.c: * porting to SDL/YUV started
+
+	* AUTHORS, ChangeLog, Makefile.am, NEWS, README, configure.in, grabber.c, grabber.h, tvf.c, tvf.h, ui.c, ui.h:
+	* initial import
+
+	* AUTHORS, ChangeLog, Makefile.am, NEWS, README, configure.in, grabber.c, grabber.h, tvf.c, tvf.h, ui.c, ui.h:
+	New file.
+
